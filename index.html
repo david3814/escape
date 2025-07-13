@@ -131,10 +131,11 @@
         /* --- 장면별 오브젝트 위치 --- */
         /* 장면 1: 개찰구 앞 */
         #obj-vending-machine { top: 72%; left: 76%; width: 9%; height: 20%; }
+        #obj-poster { top: 25%; left: 15%; width: 20%; height: 10%; } /* 새로 추가된 포스터 */
         /* 장면 2: 승강장 */
         #obj-subway-map { top: 0%; left: 65%; width: 35%; height: 55%; }
         /* 장면 3: 열차 문 앞 */
-        #obj-keypad { top: 38%; left: 76%; width: 10%; height: 20%; }
+        #obj-keypad { top: 33%; left: 76%; width: 10%; height: 20%; }
 
         /* 다음 장면으로 가는 버튼 */
         .next-scene-btn {
@@ -259,6 +260,7 @@
         <div id="scene-1" class="scene">
             <img src="https://i.ibb.co/27Jhm2hW/Whisk-storyboardeee74d5e97e745f9a77296fa.png" alt="텅 빈 개찰구" class="scene-bg">
             <div class="clickable-object" id="obj-vending-machine" title="음료수 자판기"></div>
+            <div class="clickable-object" id="obj-poster" title="안내 포스터"></div>
             <button id="goto-scene-2-btn" class="next-scene-btn">승강장으로 내려가기</button>
         </div>
 
@@ -268,7 +270,7 @@
             <div class="clickable-object" id="obj-subway-map" title="지하철 노선도"></div>
         </div>
 
-        <!-- 장면 3: 열차 문 앞 (이미지 교체됨) -->
+        <!-- 장면 3: 열차 문 앞 -->
         <div id="scene-3" class="scene">
             <img src="https://i.ibb.co/7t9Z8SMG/train.jpg" alt="굳게 닫힌 열차 문" class="scene-bg">
             <div class="clickable-object" id="obj-keypad" title="전자식 키패드"></div>
@@ -277,7 +279,9 @@
 
     <!-- 모달들 -->
     <div id="quiz1-modal" class="modal"><div class="modal-content"><span class="close-btn">×</span><h2>자판기 영수증</h2><p><b>"막차 시간까지 앞으로 7분. <br> 이 역의 승강장은 총 7개입니다."</b><br><br>영수증에 반복해서 나타나는 숫자는 무엇인가요?</p><input type="text" id="quiz1-answer" placeholder="숫자 한 글자 입력"><button id="submit-quiz1">확인</button></div></div>
+    <div id="quiz2-modal" class="modal"><div class="modal-content"><span class="close-btn">×</span><h2>분실물 안내 포스터</h2><p><b>"가장 소중한 것을 잊지 마세요. 당신의 이름처럼."</b><br><br>당신이 게임 시작 시 입력했던 이름은 몇 글자인가요?</p><input type="text" id="quiz2-answer" placeholder="숫자 한 글자 입력"><button id="submit-quiz2">확인</button></div></div>
     <div id="memory-game-modal" class="modal"><div class="modal-content"><span class="close-btn">×</span><h2>노선도 기억력 테스트</h2><p>주요 역들의 위치를 기억하고 짝을 맞추세요!</p><div id="memory-grid"></div></div></div>
+    <div id="quiz3-modal" class="modal"><div class="modal-content"><span class="close-btn">×</span><h2>노선도 계산 퀴즈</h2><p>기억력 테스트에서 찾은 4개 역의<br><b>실제 지하철 노선 번호</b>를 모두 더하면 얼마일까요?<br>(숫자 노선만, 중복 포함. 예: 서울역 1, 4호선 -> 1+4=5)</p><p style="font-size:0.9em; color:#555;">(시청, 강남, 홍대입구, 잠실)</p><input type="text" id="quiz3-answer" placeholder="계산 결과 입력"><button id="submit-quiz3">확인</button></div></div>
     <div id="escape-modal" class="modal"><div class="modal-content"><span class="close-btn">×</span><h2>탑승구 비밀번호</h2><p>모든 단서를 조합하여 4자리 비밀번호를 입력하고 열차에 탑승하세요.</p><input type="text" id="final-password" maxlength="4" placeholder="****"><button id="submit-escape">탑승하기</button></div></div>
 
     <script>
@@ -286,8 +290,8 @@
 
             const gameState = {
                 currentScene: 1,
-                solved: { scene1: false, scene2: false },
-                hints: { part1: null, part2: null },
+                solved: { quiz1: false, quiz2: false, memory: false, quiz3: false },
+                hints: { part1: null, part2: null, part3: null, part4: null },
                 player: { grade: '', class: '', name: '' },
                 timer: { interval: null, startTime: 0 }
             };
@@ -306,7 +310,9 @@
             
             const modals = {
                 quiz1: document.getElementById('quiz1-modal'),
+                quiz2: document.getElementById('quiz2-modal'),
                 memory: document.getElementById('memory-game-modal'),
+                quiz3: document.getElementById('quiz3-modal'),
                 escape: document.getElementById('escape-modal')
             };
 
@@ -368,32 +374,47 @@
                 modal.addEventListener('click', e => { if (e.target === modal) hideModal(modal); });
             });
 
-            const addHint = (text, hintPart) => {
+            const addHint = (text, hintPart, value) => {
                 if (gameState.hints[hintPart]) return;
-                gameState.hints[hintPart] = text.match(/\d+/g).join('');
+                gameState.hints[hintPart] = value;
                 const li = document.createElement('li');
                 li.textContent = `- ${text}`;
                 hintList.appendChild(li);
+            };
+
+            const checkGoToNextScene = () => {
+                if (gameState.solved.quiz1 && gameState.solved.quiz2) {
+                    document.getElementById('goto-scene-2-btn').style.display = 'block';
+                }
             };
             
             // --- 오브젝트 클릭 이벤트 바인딩 ---
             // 장면 1
             document.getElementById('obj-vending-machine').addEventListener('click', () => {
-                if (gameState.solved.scene1) return showSubtitle('자판기는 이제 볼 일이 없다.', 3000);
+                if (gameState.solved.quiz1) return showSubtitle('자판기는 이제 볼 일이 없다.', 3000);
                 showModal(modals.quiz1);
+            });
+            document.getElementById('obj-poster').addEventListener('click', () => {
+                if (gameState.solved.quiz2) return showSubtitle('포스터는 다 읽었다.', 3000);
+                showModal(modals.quiz2);
             });
             document.getElementById('goto-scene-2-btn').addEventListener('click', () => showScene(2));
 
             // 장면 2
             document.getElementById('obj-subway-map').addEventListener('click', () => {
-                if (gameState.solved.scene2) return showSubtitle('노선도는 이제 다 외웠다.', 3000);
-                initializeMemoryGame();
-                showModal(modals.memory);
+                if (gameState.solved.quiz3) return showSubtitle('노선도는 이제 다 외웠다.', 3000);
+                if (gameState.solved.memory) {
+                    showModal(modals.quiz3);
+                } else {
+                    initializeMemoryGame();
+                    showModal(modals.memory);
+                }
             });
 
             // 장면 3
             document.getElementById('obj-keypad').addEventListener('click', () => {
-                if (!gameState.solved.scene1 || !gameState.solved.scene2) {
+                const allSolved = Object.values(gameState.solved).every(s => s === true);
+                if (!allSolved) {
                     return showSubtitle('아직 단서가 부족하다. 주변을 더 둘러봐야 해.', 4000);
                 }
                 showSubtitle('모든 단서를 모았다. 비밀번호를 입력하자!', 4000);
@@ -401,21 +422,37 @@
             });
 
             // --- 문제 및 게임 로직 ---
+            // 퀴즈 1: 자판기
             document.getElementById('submit-quiz1').addEventListener('click', () => {
                 const answer = document.getElementById('quiz1-answer').value.trim();
                 if (answer === '7') {
                     showSubtitle('정답! 첫 번째 단서를 얻었다.', 3000);
-                    addHint("비밀번호의 앞 두 자리는 77이다.", 'part1');
-                    gameState.solved.scene1 = true;
+                    addHint("첫 번째 숫자는 7이다.", 'part1', '7');
+                    gameState.solved.quiz1 = true;
                     hideModal(modals.quiz1);
-                    document.getElementById('goto-scene-2-btn').style.display = 'block';
+                    checkGoToNextScene();
                 } else {
                     showSubtitle('틀린 것 같다... 영수증을 다시 잘 읽어보자.', 3000);
                 }
             });
+
+            // 퀴즈 2: 이름 길이
+            document.getElementById('submit-quiz2').addEventListener('click', () => {
+                const answer = document.getElementById('quiz2-answer').value.trim();
+                if (answer === String(gameState.player.name.length)) {
+                    showSubtitle('정답! 두 번째 단서를 얻었다.', 3000);
+                    addHint(`두 번째 숫자는 ${gameState.player.name.length}이다.`, 'part2', String(gameState.player.name.length));
+                    gameState.solved.quiz2 = true;
+                    hideModal(modals.quiz2);
+                    checkGoToNextScene();
+                } else {
+                    showSubtitle('내 이름의 글자 수가 이게 아니었던 것 같은데...', 3000);
+                }
+            });
             
+            // 기억력 게임
             const memoryGrid = document.getElementById('memory-grid');
-            const cardValues = ['서울역', '강남', '홍대입구', '잠실', '서울역', '강남', '홍대입구', '잠실'];
+            const cardValues = ['시청', '강남', '홍대입구', '잠실', '시청', '강남', '홍대입구', '잠실'];
             let flippedCards = [];
             let matchedPairs = 0;
 
@@ -450,11 +487,11 @@
                     matchedPairs++;
                     if (matchedPairs === cardValues.length / 2) {
                         setTimeout(() => {
-                            showSubtitle('해냈다! 마지막 단서를 찾았다. 열차가 도착한다!', 4000);
-                            addHint("비밀번호의 뒤 두 자리는 45이다.", 'part2');
-                            gameState.solved.scene2 = true;
+                            showSubtitle('기억력 테스트 통과! 하지만 이게 끝이 아니다.', 4000);
+                            addHint(`네 번째 숫자는 ${matchedPairs}이다.`, 'part4', String(matchedPairs));
+                            gameState.solved.memory = true;
                             hideModal(modals.memory);
-                            showScene(3);
+                            showModal(modals.quiz3);
                         }, 500);
                     }
                 } else {
@@ -463,13 +500,28 @@
                 }
                 flippedCards = [];
             }
+
+            // 퀴즈 3: 노선도 계산
+            document.getElementById('submit-quiz3').addEventListener('click', () => {
+                const answer = document.getElementById('quiz3-answer').value.trim();
+                // 시청(1+2) + 강남(2) + 홍대입구(2) + 잠실(2+8) = 5 + 2 + 2 + 10 = 19
+                if (answer === '17') {
+                    showSubtitle('정확해! 세 번째 단서를 얻었다. 열차가 도착한다!', 4000);
+                    addHint("세 번째 숫자는 9이다.", 'part3', '9'); // 19의 마지막 자리
+                    gameState.solved.quiz3 = true;
+                    hideModal(modals.quiz3);
+                    showScene(3);
+                } else {
+                    showSubtitle('계산이 틀린 것 같다. 노선 정보를 다시 확인해보자.', 3000);
+                }
+            });
             
             // --- 최종 탈출 로직 ---
             document.getElementById('submit-escape').addEventListener('click', () => {
                 const password = document.getElementById('final-password').value;
-                const finalAnswer = gameState.hints.part1 + gameState.hints.part2;
+                const finalAnswer = gameState.hints.part1 + gameState.hints.part2 + gameState.hints.part3 + gameState.hints.part4;
 
-                if (password === finalAnswer) { // '7745'
+                if (password === finalAnswer) {
                     clearInterval(gameState.timer.interval);
                     const finalTime = timerDisplay.textContent;
                     
