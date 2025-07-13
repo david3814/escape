@@ -8,22 +8,22 @@
     <style>
         /* --- CSS 코드 시작 --- */
         :root {
-            --obj-hover-color: yellow;
+            --obj-hover-color: #00ffff; /* 시안 색상으로 변경하여 가시성 확보 */
         }
 
         body {
             margin: 0;
-            font-family: 'Malgun Gothic', sans-serif;
+            font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             background-color: #1a1a1a;
             color: #333;
-            overflow: hidden; /* 스크롤 방지 */
+            overflow: hidden;
         }
 
-        /* --- [추가됨] 시작 화면 스타일 --- */
+        /* --- 시작 화면 --- */
         #login-screen {
             width: 100%;
             height: 100%;
@@ -34,57 +34,55 @@
             justify-content: center;
             align-items: center;
             text-align: center;
-            z-index: 200;
+            z-index: 300;
             position: absolute;
+            transition: opacity 0.5s;
         }
-        #login-screen h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
-        #login-screen p {
-            font-size: 1.2em;
-            color: #ccc;
-            margin-bottom: 30px;
-        }
-        .login-input-group {
-            margin-bottom: 20px;
-        }
+        #login-screen h1 { font-size: 2.5em; margin-bottom: 10px; }
+        #login-screen p { font-size: 1.2em; color: #ccc; margin-bottom: 30px; }
+        .login-input-group { margin-bottom: 20px; }
         .login-input-group input {
-            padding: 12px;
-            margin: 0 5px;
-            border: 1px solid #555;
-            border-radius: 5px;
-            background-color: #333;
-            color: white;
-            width: 80px;
-            text-align: center;
+            padding: 12px; margin: 0 5px; border: 1px solid #555;
+            border-radius: 5px; background-color: #333; color: white;
+            width: 80px; text-align: center; font-size: 1em;
         }
-        #player-name {
-            width: 120px;
-        }
-        #start-game-btn {
-            padding: 12px 30px;
-            font-size: 1.2em;
-            font-weight: bold;
-        }
+        #player-name { width: 120px; }
+        #start-game-btn { padding: 12px 30px; font-size: 1.2em; font-weight: bold; }
 
-        /* --- 게임 컨테이너 (초기에는 숨김) --- */
+        /* --- 게임 컨테이너 --- */
         #game-container {
             position: relative;
             width: 1260px;
             height: 840px;
             max-width: 95vw;
-            max-height: 63.33vw;
-            display: none; /* JS로 보이게 변경 */
+            max-height: 63.33vw; /* 1260:840 비율 유지 */
+            display: none;
+            background-color: #000;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
 
-        .room-bg {
+        /* --- 장면 관리 --- */
+        .scene {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .scene.active {
+            display: block;
+            opacity: 1;
+        }
+        .scene-bg {
             width: 100%;
             height: 100%;
             border-radius: 8px;
+            object-fit: cover;
         }
 
-        /* --- [추가됨] 타이머 & 자막 스타일 --- */
+        /* --- UI 오버레이 --- */
         #timer-display {
             position: absolute;
             top: 20px;
@@ -115,29 +113,42 @@
             opacity: 0;
             transition: opacity 0.5s;
         }
-        #subtitle-container.visible {
-            opacity: 1;
-        }
+        #subtitle-container.visible { opacity: 1; }
 
         .clickable-object {
             position: absolute;
-            background-color: rgba(255, 0, 0, 0);
+            background-color: rgba(0, 255, 255, 0);
             cursor: pointer;
-            border: 3px dashed rgba(255, 255, 0, 0);
+            border: 3px dashed rgba(0, 255, 255, 0);
             transition: border 0.3s, background-color 0.3s;
             border-radius: 10px;
         }
-
         .clickable-object:hover {
             border: 3px dashed var(--obj-hover-color);
-            background-color: rgba(255, 255, 0, 0.2);
+            background-color: rgba(0, 255, 255, 0.2);
         }
 
-        #obj-newspaper { top: 52%; left: 70%; width: 20%; height: 36%; }
-        #obj-logo { top: 59%; left: 17%; width: 6%; height: 10%; }
-        #obj-woman { top: 43%; left: 55%; width: 4%; height: 12%; }
-        #obj-map { top: 28%; left: 90%; width: 9%; height: 32%; }
-        #obj-door { top: 38%; left: 36%; width: 10%; height: 42%; }
+        /* --- 장면별 오브젝트 위치 --- */
+        /* 장면 1: 개찰구 앞 */
+        #obj-vending-machine { top: 72%; left: 76%; width: 9%; height: 20%; }
+        /* 장면 2: 승강장 */
+        #obj-subway-map { top: 0%; left: 65%; width: 35%; height: 55%; }
+        /* 장면 3: 열차 문 앞 */
+        #obj-keypad { top: 38%; left: 76%; width: 10%; height: 20%; }
+
+        /* 다음 장면으로 가는 버튼 */
+        .next-scene-btn {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 30px;
+            font-size: 1.2em;
+            font-weight: bold;
+            display: none;
+            z-index: 50;
+            animation: fadeIn 1s;
+        }
 
         #hint-display {
             position: absolute;
@@ -148,14 +159,16 @@
             padding: 10px 15px;
             border-radius: 8px;
             font-size: 14px;
+            z-index: 101;
         }
         #hint-display h3 { margin: 0 0 10px 0; }
         #hint-list { list-style: none; padding: 0; margin: 0; }
 
+        /* --- 모달 공통 스타일 --- */
         .modal {
             display: none;
             position: fixed;
-            z-index: 100;
+            z-index: 200;
             left: 0; top: 0;
             width: 100%; height: 100%;
             background-color: rgba(0,0,0,0.6);
@@ -163,7 +176,6 @@
             align-items: center;
             animation: fadeIn 0.3s;
         }
-
         .modal-content {
             background-color: #f8f8f8;
             padding: 20px 30px;
@@ -174,79 +186,54 @@
             position: relative;
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         }
-
         .close-btn {
             position: absolute;
-            top: 10px;
-            right: 15px;
-            font-size: 28px;
-            font-weight: bold;
-            color: #aaa;
-            cursor: pointer;
+            top: 10px; right: 15px;
+            font-size: 28px; font-weight: bold;
+            color: #aaa; cursor: pointer;
         }
         .close-btn:hover { color: #333; }
-
         input[type="text"] {
-            padding: 10px;
-            margin-top: 10px;
-            width: 80%;
-            border: 1px solid #ccc;
-            border-radius: 5px;
+            padding: 10px; margin-top: 10px; width: 80%;
+            border: 1px solid #ccc; border-radius: 5px; text-align: center; font-size: 1.2em;
         }
-
         button {
-            padding: 10px 20px;
-            margin-top: 15px;
-            border: none;
-            border-radius: 5px;
-            background-color: #5c67f2;
-            color: white;
-            font-size: 16px;
-            cursor: pointer;
+            padding: 10px 20px; margin-top: 15px; border: none;
+            border-radius: 5px; background-color: #5c67f2;
+            color: white; font-size: 16px; cursor: pointer;
             transition: background-color 0.2s;
         }
         button:hover { background-color: #4a54c2; }
 
-
+        /* --- 메모리 게임 스타일 --- */
         #memory-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            margin: 20px auto;
-            width: 280px;
+            gap: 10px; margin: 20px auto; width: 280px;
         }
         .memory-card {
-            width: 60px; height: 60px;
-            background-color: #bbb;
-            color: white;
-            font-size: 14px;
-            font-weight: bold;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            border-radius: 5px;
-            transform-style: preserve-3d;
-            transition: transform 0.5s;
+            width: 60px; height: 60px; background-color: #bbb;
+            color: #333; font-size: 14px; font-weight: bold;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; border-radius: 5px;
+            transform-style: preserve-3d; transition: transform 0.5s;
             position: relative;
         }
         .memory-card.is-flipped { transform: rotateY(180deg); }
         .memory-card.is-matched {
             transform: rotateY(180deg);
-            background-color: #6aaa64;
-            cursor: default;
+            background-color: #6aaa64; color: white; cursor: default;
         }
-        .card-face { position: absolute; backface-visibility: hidden; }
+        .card-face { position: absolute; backface-visibility: hidden; display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; }
+        .card-front { font-size: 2em; color: white; }
         .card-back { transform: rotateY(180deg); }
 
-        @keyframes fadeIn {
-            from { opacity: 0; } to { opacity: 1; }
-        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         /* --- CSS 코드 끝 --- */
     </style>
 </head>
 <body>
-    <!-- [추가됨] 시작 화면 -->
+    <!-- 시작 화면 -->
     <div id="login-screen">
         <h1>막차를 놓치지 마!</h1>
         <p>늦은 밤, 당신은 막차를 타고 무사히 집으로 돌아가야 합니다.</p>
@@ -255,49 +242,62 @@
             <input type="text" id="player-class" placeholder="반">
             <input type="text" id="player-name" placeholder="이름">
         </div>
-        <button id="start-game-btn">시작하기</button>
+        <button id="start-game-btn">게임 시작</button>
     </div>
 
-    <!-- 게임 화면 -->
+    <!-- 게임 컨테이너 -->
     <div id="game-container">
-        <!-- [추가됨] 타이머, 자막 -->
+        <!-- 공통 UI -->
         <div id="timer-display">00:00</div>
         <div id="subtitle-container"></div>
-
-        <img src="https://i.ibb.co/zH0fJCTt/Whisk-storyboarda795102d420a41929fe5053d.jpg" alt="늦은 밤 지하철역" class="room-bg">
-
-        <div class="clickable-object" id="obj-newspaper" title="신문 보는 남자"></div>
-        <div class="clickable-object" id="obj-logo" title="열차 로고"></div>
-        <div class="clickable-object" id="obj-woman" title="빨간 옷을 입은 여자"></div>
-        <div class="clickable-object" id="obj-map" title="노선도"></div>
-        <div class="clickable-object" id="obj-door" title="지하철 문"></div>
-
         <div id="hint-display">
             <h3>획득한 단서</h3>
             <ul id="hint-list"></ul>
         </div>
+
+        <!-- 장면 1: 개찰구 앞 -->
+        <div id="scene-1" class="scene">
+            <img src="https://i.ibb.co/27Jhm2hW/Whisk-storyboardeee74d5e97e745f9a77296fa.png" alt="텅 빈 개찰구" class="scene-bg">
+            <div class="clickable-object" id="obj-vending-machine" title="음료수 자판기"></div>
+            <button id="goto-scene-2-btn" class="next-scene-btn">승강장으로 내려가기</button>
+        </div>
+
+        <!-- 장면 2: 승강장 -->
+        <div id="scene-2" class="scene">
+            <img src="https://i.ibb.co/d0M3TP7r/Whisk-storyboard64c42492f8e047af9a60514a.png" alt="한산한 승강장" class="scene-bg">
+            <div class="clickable-object" id="obj-subway-map" title="지하철 노선도"></div>
+        </div>
+
+        <!-- 장면 3: 열차 문 앞 (이미지 교체됨) -->
+        <div id="scene-3" class="scene">
+            <img src="https://i.ibb.co/7t9Z8SMG/train.jpg" alt="굳게 닫힌 열차 문" class="scene-bg">
+            <div class="clickable-object" id="obj-keypad" title="전자식 키패드"></div>
+        </div>
     </div>
 
     <!-- 모달들 -->
-    <div id="quiz1-modal" class="modal"><div class="modal-content"><span class="close-btn">×</span><h2>첫 번째 문제</h2><p>신문에 '마지막 열차'에 대한 기사가 실려있다.<br>'막차'를 영어로 쓰시오. (두 단어, 소문자로)</p><input type="text" id="quiz1-answer" placeholder="정답 입력"><button id="submit-quiz1">제출</button></div></div>
-    <div id="hint1-modal" class="modal"><div class="modal-content"><span class="close-btn">×</span><h2>힌트</h2><p>열차 로고가 빛나고 있다.<br>"서두르세요! 곧 출발합니다. 잊으신 물건은 없으신가요?"</p></div></div>
-    <div id="quiz2-modal" class="modal"><div class="modal-content"><span class="close-btn">×</span><h2>두 번째 문제</h2><p>저 멀리 서 있는 여자가 입은 옷은 무슨 색인가?</p><input type="text" id="quiz2-answer" placeholder="정답 입력"><button id="submit-quiz2">제출</button></div></div>
-    <div id="memory-game-modal" class="modal"><div class="modal-content"><span class="close-btn">×</span><h2>메모리 게임</h2><p>복잡한 노선도다. 같은 역 이름 카드를 맞추자!</p><div id="memory-grid"></div></div></div>
-    <div id="escape-modal" class="modal"><div class="modal-content"><span class="close-btn">×</span><h2>탈출</h2><p>모든 단서를 조합하여 4자리 비밀번호를 입력하고 열차에 탑승하세요.</p><input type="text" id="final-password" maxlength="4" placeholder="****"><button id="submit-escape">탑승하기</button></div></div>
+    <div id="quiz1-modal" class="modal"><div class="modal-content"><span class="close-btn">×</span><h2>자판기 영수증</h2><p><b>"막차 시간까지 앞으로 7분. <br> 이 역의 승강장은 총 7개입니다."</b><br><br>영수증에 반복해서 나타나는 숫자는 무엇인가요?</p><input type="text" id="quiz1-answer" placeholder="숫자 한 글자 입력"><button id="submit-quiz1">확인</button></div></div>
+    <div id="memory-game-modal" class="modal"><div class="modal-content"><span class="close-btn">×</span><h2>노선도 기억력 테스트</h2><p>주요 역들의 위치를 기억하고 짝을 맞추세요!</p><div id="memory-grid"></div></div></div>
+    <div id="escape-modal" class="modal"><div class="modal-content"><span class="close-btn">×</span><h2>탑승구 비밀번호</h2><p>모든 단서를 조합하여 4자리 비밀번호를 입력하고 열차에 탑승하세요.</p><input type="text" id="final-password" maxlength="4" placeholder="****"><button id="submit-escape">탑승하기</button></div></div>
 
     <script>
         // --- JAVASCRIPT 코드 시작 ---
         document.addEventListener('DOMContentLoaded', () => {
 
-            // --- 게임 상태 관리 ---
             const gameState = {
-                solved: { newspaper: false, logo: false, woman: false, map: false },
-                hints: [],
+                currentScene: 1,
+                solved: { scene1: false, scene2: false },
+                hints: { part1: null, part2: null },
                 player: { grade: '', class: '', name: '' },
                 timer: { interval: null, startTime: 0 }
             };
 
-            // --- DOM 요소 가져오기 ---
+            // DOM 요소 캐싱
+            const scenes = {
+                1: document.getElementById('scene-1'),
+                2: document.getElementById('scene-2'),
+                3: document.getElementById('scene-3')
+            };
             const loginScreen = document.getElementById('login-screen');
             const gameContainer = document.getElementById('game-container');
             const hintList = document.getElementById('hint-list');
@@ -306,13 +306,11 @@
             
             const modals = {
                 quiz1: document.getElementById('quiz1-modal'),
-                hint1: document.getElementById('hint1-modal'),
-                quiz2: document.getElementById('quiz2-modal'),
                 memory: document.getElementById('memory-game-modal'),
                 escape: document.getElementById('escape-modal')
             };
 
-            // --- [추가됨] 게임 시작 처리 ---
+            // 게임 시작
             document.getElementById('start-game-btn').addEventListener('click', () => {
                 gameState.player.grade = document.getElementById('player-grade').value || ' ';
                 gameState.player.class = document.getElementById('player-class').value || ' ';
@@ -323,21 +321,29 @@
                     return;
                 }
                 
-                loginScreen.style.display = 'none';
-                gameContainer.style.display = 'block';
-
-                startGame();
+                loginScreen.style.opacity = '0';
+                setTimeout(() => {
+                    loginScreen.style.display = 'none';
+                    gameContainer.style.display = 'block';
+                    startGame();
+                }, 500);
             });
 
             function startGame() {
                 gameState.timer.startTime = Date.now();
                 gameState.timer.interval = setInterval(updateTimer, 1000);
-                showSubtitle("늦은 밤... 막차 시간이 얼마 남지 않았다. 서둘러야 해!", 5000);
+                showScene(1);
+                showSubtitle("으... 늦었다. 역 안은 왜 이렇게 조용하지?", 4000);
             }
 
-            // --- [추가됨] 타이머 & 자막 함수 ---
-            const pad = (num) => String(num).padStart(2, '0');
+            // --- 핵심 함수들 ---
+            function showScene(sceneNumber) {
+                Object.values(scenes).forEach(scene => scene.classList.remove('active'));
+                scenes[sceneNumber].classList.add('active');
+                gameState.currentScene = sceneNumber;
+            }
 
+            const pad = (num) => String(num).padStart(2, '0');
             function updateTimer() {
                 const elapsedSeconds = Math.floor((Date.now() - gameState.timer.startTime) / 1000);
                 const minutes = pad(Math.floor(elapsedSeconds / 60));
@@ -355,80 +361,61 @@
                 }, duration);
             }
 
-            // --- 모달 제어 함수 ---
             const showModal = (modal) => modal.style.display = 'flex';
             const hideModal = (modal) => modal.style.display = 'none';
-
             document.querySelectorAll('.modal').forEach(modal => {
                 modal.querySelector('.close-btn')?.addEventListener('click', () => hideModal(modal));
                 modal.addEventListener('click', e => { if (e.target === modal) hideModal(modal); });
             });
 
-            // --- 힌트 관리 함수 ---
-            const addHint = (text) => {
-                if (gameState.hints.includes(text)) return;
-                gameState.hints.push(text);
+            const addHint = (text, hintPart) => {
+                if (gameState.hints[hintPart]) return;
+                gameState.hints[hintPart] = text.match(/\d+/g).join('');
                 const li = document.createElement('li');
                 li.textContent = `- ${text}`;
                 hintList.appendChild(li);
             };
             
-            // --- 오브젝트 클릭 이벤트 ---
-            document.getElementById('obj-newspaper').addEventListener('click', () => {
-                if (gameState.solved.newspaper) return showSubtitle('신문은 이미 다 읽었다.', 3000);
+            // --- 오브젝트 클릭 이벤트 바인딩 ---
+            // 장면 1
+            document.getElementById('obj-vending-machine').addEventListener('click', () => {
+                if (gameState.solved.scene1) return showSubtitle('자판기는 이제 볼 일이 없다.', 3000);
                 showModal(modals.quiz1);
             });
-            document.getElementById('obj-logo').addEventListener('click', () => {
-                showModal(modals.hint1);
-                if (!gameState.solved.logo) {
-                    addHint("물건을 잊지 말라는 안내방송이 나왔다.");
-                    gameState.solved.logo = true;
-                }
-            });
-            document.getElementById('obj-woman').addEventListener('click', () => {
-                if (gameState.solved.woman) return showSubtitle('더 이상 저 여자에게선 얻을 정보가 없어 보인다.', 3000);
-                showModal(modals.quiz2);
-            });
-            document.getElementById('obj-map').addEventListener('click', () => {
-                if (gameState.solved.map) return showSubtitle('노선도는 이제 익숙하다.', 3000);
+            document.getElementById('goto-scene-2-btn').addEventListener('click', () => showScene(2));
+
+            // 장면 2
+            document.getElementById('obj-subway-map').addEventListener('click', () => {
+                if (gameState.solved.scene2) return showSubtitle('노선도는 이제 다 외웠다.', 3000);
                 initializeMemoryGame();
                 showModal(modals.memory);
             });
-            document.getElementById('obj-door').addEventListener('click', () => {
-                if (!gameState.solved.newspaper || !gameState.solved.woman || !gameState.solved.map) {
-                    return showSubtitle('아직 단서가 부족해 문을 열 수 없다. 주변을 더 둘러보자.', 4000);
+
+            // 장면 3
+            document.getElementById('obj-keypad').addEventListener('click', () => {
+                if (!gameState.solved.scene1 || !gameState.solved.scene2) {
+                    return showSubtitle('아직 단서가 부족하다. 주변을 더 둘러봐야 해.', 4000);
                 }
-                showSubtitle('모든 단서를 모은 것 같다. 비밀번호를 입력하자!', 4000);
+                showSubtitle('모든 단서를 모았다. 비밀번호를 입력하자!', 4000);
                 showModal(modals.escape);
             });
 
             // --- 문제 및 게임 로직 ---
             document.getElementById('submit-quiz1').addEventListener('click', () => {
-                const answer = document.getElementById('quiz1-answer').value.toLowerCase().trim();
-                if (answer === 'last train') {
-                    showSubtitle('정답이야! 첫 번째 단서를 얻었다.', 3000);
-                    addHint("비밀번호의 첫 두 자리는 08이다.");
-                    gameState.solved.newspaper = true;
+                const answer = document.getElementById('quiz1-answer').value.trim();
+                if (answer === '7') {
+                    showSubtitle('정답! 첫 번째 단서를 얻었다.', 3000);
+                    addHint("비밀번호의 앞 두 자리는 77이다.", 'part1');
+                    gameState.solved.scene1 = true;
                     hideModal(modals.quiz1);
+                    document.getElementById('goto-scene-2-btn').style.display = 'block';
                 } else {
-                    showSubtitle('틀린 것 같다... 신문을 다시 잘 읽어보자.', 3000);
+                    showSubtitle('틀린 것 같다... 영수증을 다시 잘 읽어보자.', 3000);
                 }
             });
             
-            document.getElementById('submit-quiz2').addEventListener('click', () => {
-                const answer = document.getElementById('quiz2-answer').value.trim();
-                if (answer === '빨간색' || answer === '빨강') {
-                    showSubtitle('맞아, 저건 빨간색이야. 단서를 찾았다!', 3000);
-                    addHint("비밀번호의 마지막 자리는 4이다.");
-                    gameState.solved.woman = true;
-                    hideModal(modals.quiz2);
-                } else {
-                    showSubtitle('저 색이 아닌데... 눈을 가늘게 뜨고 다시 보자.', 3000);
-                }
-            });
-
             const memoryGrid = document.getElementById('memory-grid');
-            const cardValues = ['서울역', '용산', '시청', '신도림','강남','양재','잠실','고속터미널','경복궁','이수','인천','천안','수원','구로','광화문','아산', '서울역', '용산', '시청', '신도림','강남','양재','잠실','고속터미널','경복궁','이수','인천','천안','수원','구로','광화문','아산'];
+            const cardValues = ['서울역', '강남', '홍대입구', '잠실', '서울역', '강남', '홍대입구', '잠실'];
             let flippedCards = [];
             let matchedPairs = 0;
 
@@ -463,11 +450,12 @@
                     matchedPairs++;
                     if (matchedPairs === cardValues.length / 2) {
                         setTimeout(() => {
-                            showSubtitle('해냈다! 복잡한 노선도에서 마지막 단서를 찾았어.', 4000);
-                            addHint("비밀번호의 세 번째 자리는 1이다.");
-                            gameState.solved.map = true;
+                            showSubtitle('해냈다! 마지막 단서를 찾았다. 열차가 도착한다!', 4000);
+                            addHint("비밀번호의 뒤 두 자리는 45이다.", 'part2');
+                            gameState.solved.scene2 = true;
                             hideModal(modals.memory);
-                        }, 300);
+                            showScene(3);
+                        }, 500);
                     }
                 } else {
                     card1.classList.remove('is-flipped');
@@ -479,19 +467,21 @@
             // --- 최종 탈출 로직 ---
             document.getElementById('submit-escape').addEventListener('click', () => {
                 const password = document.getElementById('final-password').value;
-                if (password === '0814') {
-                    clearInterval(gameState.timer.interval); // 타이머 중지
+                const finalAnswer = gameState.hints.part1 + gameState.hints.part2;
+
+                if (password === finalAnswer) { // '7745'
+                    clearInterval(gameState.timer.interval);
                     const finalTime = timerDisplay.textContent;
                     
                     document.body.innerHTML = `
-                        <div style="color:white; text-align:center; padding-top: 30vh;">
+                        <div style="color:white; text-align:center; padding: 20vh 20px; font-size: 1.2em; display:flex; flex-direction:column; justify-content:center; align-items:center; height: 60vh;">
                             <h1>탈출 성공!</h1>
                             <p>${gameState.player.grade}학년 ${gameState.player.class}반 ${gameState.player.name}님, 막차에 무사히 탑승했습니다!</p>
-                            <p>기록: ${finalTime}</p>
+                            <p style="font-size: 1.5em; margin-top: 30px;">최종 기록: <b>${finalTime}</b></p>
                         </div>
                     `;
                 } else {
-                    showSubtitle('비밀번호가 틀렸어! 획득한 단서들을 다시 조합해보자.', 4000);
+                    showSubtitle('비밀번호가 틀렸다! 획득한 단서들을 다시 조합해보자.', 4000);
                 }
             });
         });
